@@ -31,6 +31,16 @@ def Coeff_v(geo, var, Fields, Faces):
 
                 Faces.dPdy[i,j] = (Fields.P[i,j]-Fields.P[i,j-1]) * geo.dy                     
 
+    print('a_w_v')
+    print(np.array2string(np.flipud(Faces.a_w_v.T),formatter={'float_kind': lambda x: f"{x:8.3f}"}, max_line_width= 1000000000))
+    print('a_e_v')
+    print(np.array2string(np.flipud(Faces.a_e_v.T),formatter={'float_kind': lambda x: f"{x:8.3f}"}, max_line_width= 1000000000))
+    print('a_n_v')
+    print(np.array2string(np.flipud(Faces.a_n_v.T),formatter={'float_kind': lambda x: f"{x:8.3f}"}, max_line_width= 1000000000))
+    print('a_s_v')
+    print(np.array2string(np.flipud(Faces.a_s_v.T),formatter={'float_kind': lambda x: f"{x:8.3f}"}, max_line_width= 1000000000))
+    print('a_P_v')
+    print(np.array2string(np.flipud(Faces.a_P_v.T),formatter={'float_kind': lambda x: f"{x:8.3f}"}, max_line_width= 1000000000))
 
 
 def TDMA_v(var, geo, Fields, Faces, Tri):
@@ -51,33 +61,35 @@ def TDMA_v(var, geo, Fields, Faces, Tri):
             Tri.RHS_v[k] = (-Faces.dPdy[iv,jv])
 
 
-            if iv == 0:
+            # West Inlet, dirchlett
+            if iv == 0:         
                  
                 Tri.RHS_v[k] += (Faces.a_w_v[iv,jv]*var.v_inlet) 
                 Tri.RHS_v[k] += (Faces.a_e_v[iv,jv]*Fields.v[iv+1,jv])
 
+
+            # East outlet, Zero-gradiant
             elif iv == geo.Nx-1:
                  
-                 Tri.RHS_v[k] += (Faces.a_w_v[iv,jv]*Fields.v[iv-1,jv])
+                 Tri.diag_v[k] -= Faces.a_e_v[iv,jv]
                  Tri.RHS_v[k] += (Faces.a_e_v[iv,jv]*Fields.v[iv,jv])
 
+            # Interior
             else:
                  
                 Tri.RHS_v[k] += (Faces.a_w_v[iv,jv]*Fields.v[iv-1,jv]) 
                 Tri.RHS_v[k] += (Faces.a_e_v[iv,jv]*Fields.v[iv+1,jv])
 
+            # South wall
             if jv == 1:
                  
-                print(jv)
-                print('bazinga')
+              
                 Tri.lower_v[k] = 0
                 Tri.RHS_v[k] += Faces.a_s_v[iv,jv] * 0
 
-
+            # North wall
             elif jv == geo.Ny-1:
                     
-                print(jv)
-                print('BAZINGA')
 
                 Tri.upper_v[k] = 0
                 Tri.RHS_v[k] += Faces.a_n_v[iv,jv] * 0

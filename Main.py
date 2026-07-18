@@ -19,7 +19,7 @@ print(f"Grid: {geo.Nx}x{geo.Ny} | Re: {var.rho * var.u_inlet * geo.lx / var.mu:.
 #BCs
 mit = 0
 
-for mit in range (1):
+for mit in range (50):
     Fields.u[0,:] = var.u_inlet
     Fields.v[:, 0] = 0
     Fields.v[:, -1] = 0
@@ -33,6 +33,12 @@ for mit in range (1):
     for i in range (geo.Nx):                                                                    # generates north/south faces, F = pvA
         for j in range (geo.Ny+1):
             Faces.F_ns[i,j] = var.rho * Fields.v[i,j] * geo.dx
+
+    print('F_we final results')
+    print(np.array2string(np.flipud(Faces.F_we.T),formatter={'float_kind': lambda x: f"{x:8.3f}"}, max_line_width= 1000000000))
+    print('F_ns final results')
+    print(np.array2string(np.flipud(Faces.F_ns.T),formatter={'float_kind': lambda x: f"{x:8.3f}"}, max_line_width= 1000000000))
+
 
 
     u_solver.Coeff_u(geo,var,Fields,Faces)
