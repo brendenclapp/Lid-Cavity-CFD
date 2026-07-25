@@ -4,33 +4,90 @@ from scipy.linalg import solve_banded
 
 def Coeff_v(geo, var, Fields, Faces):
 
-    Fields.v_old = np.copy(Fields.v) 
 
     for i in range (geo.Nx):
-            for j in range (1, geo.Ny):
+        for j in range (1, geo.Ny):
+
+
+            #===================================== EAST ======================================================== 
+                # Left Wall
+                if i == 0:
+
+                    ce = var.rho*(Fields.u[i,j] + Fields.u[i,j-1])*0.5
+                    de = var.mu * geo.dy / geo.dx
+                    we = (var.mu * geo.dx)/ 3*geo.dy
+                    
+                    Faces.a_e_v[i,j] = -((abs(ce)-ce)/2)*geo.dx - de - we
+
+                elif i == geo.Nx-1:
+
+                    Faces.a_e_v[i,j] = 0
+
+                # East A Interior
+                else:
+                    ce = var.rho*(Fields.u[i,j] + Fields.u[i,j-1])*0.5
+                    de = var.mu*geo.dy/geo.dx
+        
+                    Faces.a_e_v[i,j] = -((abs(ce)-ce)/2)*geo.dy - de
+    
+            #===================================== WEST ======================================================== 
+                # Left Wall
+                if i == 0:
+
+                    Faces.a_w_v[i,j] = 0
+
+                elif i == geo.Nx-1:
+
+                    cw = var.rho*(Fields.u[i+1,j] + Fields.u[i+1,j-1])*0.5
+                    dw = var.mu * geo.dy / geo.dx
+                    ww = (var.mu * geo.dx)/ 3*geo.dy
+        
+                    Faces.a_w_v[i,j] = -((abs(cw)+cw)/2)*geo.dy - dw - ww
+
+
+                # West A Interior
+                else:
+                    cw = var.rho*(Fields.u[i+1,j] + Fields.u[i+1,j-1])*0.5
+                    dw = var.mu * geo.dy / geo.dx
+        
+                    Faces.a_w_v[i,j] = -((abs(cw)+cw)/2)*geo.dy - dw
+    
+            #===================================== NORTH ======================================================== 
+            #North A Interior
+                cn = var.rho*(Fields.v[i,j] + Fields.v[i,j+1])*0.5
+                dn = var.mu * geo.dx / geo.dy
+
+                Faces.a_n_v[i,j] = -((abs(cn)-cn)/2)*geo.dx - dn
+
+            #===================================== SOUTH ======================================================== 
+
+            #South A Interior
+                cs = var.rho*(Fields.v[i,j] + Fields.v[i,j-1])*0.5
+                ds = var.mu * geo.dx / geo.dy
+
+                Faces.a_s_v[i,j] = -((abs(cs)+cs)/2)*geo.dx - ds
+            
+            #===================================== CENTER ======================================================== 
+            #Left Wall
+                if i == 0:
+
+                    Faces.a_P_v[i,j] = (((abs(cn)-cn)/2)*geo.dx + dn) + (((abs(cs)+cs)/2)*geo.dx + ds) \
+                                        + ((((abs(ce)-ce)/2)*geo.dy + de) + (3*var.mu*geo.dx)/geo.dy)
+                #Top Wall
+                elif j == geo.Ny-1:
+
+                    Faces.a_P_v[i,j] = (((abs(cn)-cn)/2)*geo.dx + dn) + (((abs(cs)+cs)/2)*geo.dx + ds) \
+                                        + ((((abs(cw)+cw)/2)*geo.dy + de) + (3*var.mu*geo.dx)/geo.dy)
+
+                # Central A Interior
+                else:
+                    Faces.a_P_v[i,j] = (((abs(ce)-ce)/2)*geo.dy + de) + (((abs(cw)+cw)/2)*geo.dy + dw) \
+                                    + (((abs(cn)-cn)/2)*geo.dx + dn) + ((abs(cs)+cs)/2)*geo.dx + ds
+
+            #===================================== PRESSURE ========================================================
+
+                Faces.dPdy[i,j] = (Fields.P[i,j-1] - Fields.P[i,j]) * geo.dy
                 
-                # (1, Ny) no need to generate coefficients for j == 0 or j == Ny because the BC already tell us what we need to know
-                # VF_we/ns already take into account the Mesh GUI via its reliance on v field
-
-                # Staggered face values for v nodes formed from averaging the scalar centered faces
-
-                Faces.Fn_v[i,j] = 0.5*(Faces.F_ns[i,j]+Faces.F_ns[i,j+1])
-                Faces.Fs_v[i,j] = 0.5*(Faces.F_ns[i,j]+Faces.F_ns[i,j-1])
-                Faces.Fe_v[i,j] = 0.5*(Faces.F_we[i,j]+Faces.F_we[i,j-1])
-                Faces.Fw_v[i,j] = 0.5*(Faces.F_we[i+1,j]+Faces.F_we[i+1,j-1])
-
-                # TVD neighbor coefficients formed from v CV faces and v CV diffusion terms
-
-                Faces.a_w_v[i,j] = var.Dw + max(Faces.Fw_v[i,j], 0)
-                Faces.a_e_v[i,j] = var.De + max(-Faces.Fe_v[i,j], 0)
-                Faces.a_s_v[i,j] = var.Dn + max(Faces.Fs_v[i,j], 0)
-                Faces.a_n_v[i,j] = var.Ds + max(-Faces.Fn_v[i,j],0)
-
-              
-                Faces.a_P_v[i,j] = Faces.a_w_v[i,j] + Faces.a_e_v[i,j] + Faces.a_s_v[i,j] + Faces.a_n_v[i,j] #+ (Faces.Fe_v[i,j]-Faces.Fw_v[i,j]) + (Faces.Fn_v[i,j]-Faces.Fs_v[i,j])
-
-                Faces.dPdy[i,j] = (Fields.P[i,j]-Fields.P[i,j-1]) * geo.dy                     
-
     print('a_w_v')
     print(np.array2string(np.flipud(Faces.a_w_v.T),formatter={'float_kind': lambda x: f"{x:8.3f}"}, max_line_width= 1000000000))
     print('a_e_v')
@@ -42,6 +99,7 @@ def Coeff_v(geo, var, Fields, Faces):
     print('a_P_v')
     print(np.array2string(np.flipud(Faces.a_P_v.T),formatter={'float_kind': lambda x: f"{x:8.3f}"}, max_line_width= 1000000000))
 
+        
 
 def TDMA_v(var, geo, Fields, Faces, Tri):
      

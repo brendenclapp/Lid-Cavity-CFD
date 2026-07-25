@@ -5,42 +5,101 @@ import numpy as np
 
 def Coeff_u(geo,var,Fields,Faces):
    
-    Fields.u_old = np.copy(Fields.u) 
-
-    for i in range (1, geo.Nx):
+   
+    for i in range (1,geo.Nx):
         for j in range (geo.Ny):
-            
-            # (1, Nx) no need to generate coefficients for i == 0 or i == Nx because the BC already tell us what we need to know
-            # UF_we/ns already take into account the Mesh GUI via its reliance on u field
 
-            # Staggered face values for u nodes formed from averaging the scalar centered faces
+            #===================================== EAST ======================================================== 
+            # East A Interior
         
-            Faces.Fw_u[i,j] = 0.5 * (Faces.F_we[i,j] + Faces.F_we[i-1,j])
-            Faces.Fe_u[i,j] = 0.5 * (Faces.F_we[i,j] + Faces.F_we[i+1,j])
-            Faces.Fs_u[i,j] = 0.5 * (Faces.F_ns[i,j] + Faces.F_ns[i-1,j])
-            Faces.Fn_u[i,j] = 0.5 * (Faces.F_ns[i,j+1] + Faces.F_ns[i-1,j+1])
+            ce = var.rho*(Fields.u[i+1,j] + Fields.u[i,j])*0.5
+            de = var.mu*geo.dy/geo.dx
 
-        
-            Faces.a_w_u[i,j] = var.Dw + max(Faces.Fw_u[i,j], 0)
-            Faces.a_e_u[i,j] = var.De + max(-Faces.Fe_u[i,j], 0)
+            Faces.a_e_u[i,j] = -((abs(ce)-ce)/2)*geo.dy - de
 
-            #South wall diffusion added
+            #===================================== WEST ======================================================== 
+            # West A Interior
+
+            cw = var.rho*(Fields.u[i-1,j] + Fields.u[i,j])*0.5
+            dw = var.mu * geo.dy / geo.dx
+
+            Faces.a_w_u[i,j] = -((abs(cw)+cw)/2)*geo.dy - dw
+
+            #===================================== NORTH ======================================================== 
+            #Bottom Wall
             if j == 0:
-                Faces.a_s_u[i,j] = var.D_wall + max(Faces.Fs_u[i,j], 0)
-            else:
-                Faces.a_s_u[i,j] = var.Ds + max(Faces.Fs_u[i,j], 0)
 
-            #North wall diffusion added
-            if j == geo.Ny-1:
-                Faces.a_n_u[i,j] = var.D_wall + max(-Faces.Fn_u[i,j],0)
-            else:
-                Faces.a_n_u[i,j] = var.Dn + max(-Faces.Fn_u[i,j],0)
+                cn = var.rho*(Fields.v[i,j+1] + Fields.v[i-1,j+1])*0.5
+                dn = var.mu * geo.dx / geo.dy
+                wn = (var.mu * geo.dx)/ 3*geo.dy
+                
+                Faces.a_n_u[i,j] = -((abs(cn)-cn)/2)*geo.dx - dn - wn
 
-            Faces.a_P_u[i,j] = Faces.a_w_u[i,j] + Faces.a_e_u[i,j] + Faces.a_s_u[i,j] + Faces.a_n_u[i,j]
-            #Faces.a_P_u[i,j] += (Faces.Fe_u[i,j]-Faces.Fw_u[i,j]) + ((Faces.Fn_u[i,j]-Faces.Fs_u[i,j]))
+            #Top Wall
+            elif j == geo.Ny-1:
+
+                Faces.a_n_u[i,j] = 0
+
+            # North A Interior
+            else:
             
-            Faces.dPdx[i,j] =  (Fields.P[i-1,j]-Fields.P[i,j]) * geo.dy      
-    """
+                cn = var.rho*(Fields.v[i,j+1] + Fields.v[i-1,j+1])*0.5
+                dn = var.mu * geo.dx / geo.dy
+
+                Faces.a_n_u[i,j] = -((abs(cn)-cn)/2)*geo.dx - dn
+
+            #===================================== SOUTH ======================================================== 
+            #Bottom Wall
+            if j == 0:
+
+                Faces.a_s_u[i,j] = 0
+
+            #Top Wall
+            elif j == geo.Ny-1:
+
+                cs = var.rho*(Fields.v[i,j] + Fields.v[i-1,j])*0.5
+                ds = var.mu * geo.dx / geo.dy
+                ws = (var.mu * geo.dx)/ 3*geo.dy
+                
+                Faces.a_s_u[i,j] = -((abs(cs)+cs)/2)*geo.dx - ds - ws
+
+            
+            # South A Interior
+            else:
+                cs = var.rho*(Fields.v[i,j] + Fields.v[i-1,j])*0.5
+                ds = var.mu * geo.dx / geo.dy
+
+                Faces.a_s_u[i,j] = -((abs(cs)+cs)/2)*geo.dx - ds
+
+            #===================================== CENTER ======================================================== 
+            #Bottom Wall
+            if j == 0:
+
+                Faces.a_P_u[i,j] = (((abs(ce)-ce)/2)*geo.dy + de) + (((abs(cw)+cw)/2)*geo.dy + dw) \
+                                + (((abs(cn)-cn)/2)*geo.dx + dn + (3*var.mu*geo.dx)/geo.dy)
+
+            #Top Wall
+            elif j == geo.Ny-1:
+
+                Faces.a_P_u[i,j] = (((abs(ce)-ce)/ 2)*geo.dy + de) + (((abs(cw)+cw)/2)*geo.dy + dw) \
+                                    + (((abs(cs)+cs)/2)*geo.dx + ds + (3*var.mu*geo.dx)/geo.dy)
+
+            # Central A Interior
+            else:
+                Faces.a_P_u[i,j] = (((abs(ce)-ce)/2)*geo.dy + de) + (((abs(cw)+cw)/2)*geo.dy + dw) \
+                                + (((abs(cn)-cn)/2)*geo.dx + dn) + ((abs(cs)+cs)/2)*geo.dx + ds
+
+            #===================================== PRESSURE ========================================================
+
+            if j == geo.Ny - 1:
+
+                Faces.dPdx[i,j] = ((Fields.P[i-1,j] - Fields.P[i,j]) * geo.dy) + ((8/(3*geo.dy)*var.mu*var.u_lid*geo.dx))
+
+            else:
+
+                Faces.dPdx[i,j] = (Fields.P[i-1,j] - Fields.P[i,j]) * geo.dy
+
+
     print('a_w_u')
     print(np.array2string(np.flipud(Faces.a_w_u.T),formatter={'float_kind': lambda x: f"{x:8.3f}"}, max_line_width= 1000000000))
     print('a_e_u')
@@ -51,66 +110,146 @@ def Coeff_u(geo,var,Fields,Faces):
     print(np.array2string(np.flipud(Faces.a_s_u.T),formatter={'float_kind': lambda x: f"{x:8.3f}"}, max_line_width= 1000000000))
     print('a_P_u')
     print(np.array2string(np.flipud(Faces.a_P_u.T),formatter={'float_kind': lambda x: f"{x:8.3f}"}, max_line_width= 1000000000))
-    """
+
+
     
 def TDMA_u(var, geo, Fields, Faces, Tri):
 
     from scipy.linalg import solve_banded
+
+    #========================================== COLUMNS ============================
+    for uitt in range (2):
+        for i in range(1, geo.Nx):
+
+            Tri.upper_col[:] = 0
+            Tri.diag_col[:]  = 0
+            Tri.lower_col[:] = 0
+            Tri.RHS_col[:]   = 0
+
+            for j in range(geo.Ny):
+
+                k = j
+
+                Tri.upper_col[k] = Faces.a_n_u[i,j]
+                Tri.diag_col[k]  = Faces.a_P_u[i,j]*(1.2)
+                Tri.lower_col[k] = Faces.a_s_u[i,j]
+                Tri.RHS_col[k] = Faces.dPdx[i,j]
+
+
+                if i == 1:
+
+                    #Residual
+                    Tri.RHS_col[k] += (-Faces.a_e_u[i,j]*Fields.u[i+1,j])
+
+                elif i == geo.Nx-1:
+
+                    #Residual
+                    Tri.RHS_col[k] += (-Faces.a_w_u[i,j]*Fields.u[i-1,j])
+
+                else:
+
+                    #Residual
+                    Tri.RHS_col[k] += (-Faces.a_w_u[i,j]*Fields.u[i-1,j] + -Faces.a_e_u[i,j]*Fields.u[i+1,j])
+
+
+    
+                if j == 0:
+
+                    Tri.lower_col[k] = 0
+
+                    #Residual
+                    Tri.RHS_col[k] += -Faces.a_P_u[i,j]*Fields.u[i,j] -Faces.a_n_u[i,j]*Fields.u[i,j+1]
+
+                elif j == geo.Ny-1:
+
+                    Tri.upper_col[k] = 0
+
+                    Tri.RHS_col[k] += Faces.a_n_u[i,j]*var.u_lid
+
+                    #Residual
+                    Tri.RHS_col[k] += -Faces.a_P_u[i,j]*Fields.u[i,j] -Faces.a_s_u[i,j]*Fields.u[i,j-1]
+
+                else:
+
+                    #Residual
+                    Tri.RHS_col[k] += -Faces.a_P_u[i,j]*Fields.u[i,j] -Faces.a_s_u[i,j]*Fields.u[i,j-1] -Faces.a_n_u[i,j]*Fields.u[i,j+1]
+
+
+
+            ab = np.zeros((3, geo.Ny))
+
+            ab[0,1:] = Tri.upper_col[:-1]
+            ab[1,:]  = Tri.diag_col
+            ab[2,:-1] = Tri.lower_col[1:]
+            sol = solve_banded((1,1), ab, Tri.RHS_col)
+            Fields.u_tilde[i,:] = sol
+
+        for i in range(1, geo.Nx):
+            for j in range(geo.Ny):
+
+                Fields.u[i,j] = Fields.u[i,j] + Fields.u_tilde[i,j]
+        
+                        
+    # ================================================= ROWS =========================================================
+        for j in range(geo.Ny):
+            Tri.upper_row[:] = 0
+            Tri.diag_row[:]  = 0
+            Tri.lower_row[:] = 0
+            Tri.RHS_row[:]   = 0
+            for i in range(1, geo.Nx):
+
+                k = i-1
+
+                Tri.upper_row[k] = Faces.a_e_u[i,j]
+                Tri.diag_row[k]  = Faces.a_P_u[i,j]*(1.2)
+                Tri.lower_row[k] = Faces.a_w_u[i,j]
+                Tri.RHS_row[k]   = Faces.dPdx[i,j]
+
+                if i == 1:
+
+                    Tri.lower_row[k] = 0
+
+                    #Residiual
+                    Tri.RHS_row[k] += -Faces.a_e_u[i,j]*Fields.u[i+1,j] - Faces.a_P_u[i,j]*Fields.u[i,j]
+
+                elif i == geo.Nx-1:
+
+                    Tri.upper_row[k] = 0
+
+                    #Residiual
+                    Tri.RHS_row[k] += -Faces.a_w_u[i,j]*Fields.u[i-1,j] - Faces.a_P_u[i,j]*Fields.u[i,j]
+
+                else:
+
+                    #Residiual
+                    Tri.RHS_row[k] += -Faces.a_w_u[i,j]*Fields.u[i-1,j] - Faces.a_P_u[i,j]*Fields.u[i,j] -Faces.a_e_u[i,j]*Fields.u[i+1,j]
+
+                if j == 0:
+
+                    Tri.RHS_row[k] += -Faces.a_n_u[i,j]*Fields.u[i,j+1]
+
+                elif j == geo.Ny-1:
+
+                    Tri.RHS_row[k] += -Faces.a_s_u[i,j]*Fields.u[i,j-1] + -Faces.a_n_u[i,j]*var.u_lid
+
+                else:
+
+                    Tri.RHS_row[k] += -Faces.a_n_u[i,j]*Fields.u[i,j+1] - Faces.a_s_u[i,j]*Fields.u[i,j-1]
+
+            ab = np.zeros((3, geo.Nx-1))
+
+            ab[0,1:] = Tri.upper_row[:-1]
+            ab[1,:]  = Tri.diag_row
+            ab[2,:-1] = Tri.lower_row[1:geo.Nx-1]
+
+            sol = solve_banded((1,1), ab, Tri.RHS_row)
+
+            Fields.u_tilde[1:geo.Nx,j] = sol
+
+        for i in range (1, geo.Nx):
+                for j in range (geo.Ny):
+                    Fields.u[i,j] = Fields.u[i,j] + Fields.u_tilde[i,j]
+
   
-    iu = 0
-    ju = 0
-    ittu = 0
-
-
-    for iu in range (1, geo.Nx):
-        for ju in range (geo.Ny):
-
-            Tri.upper[ju] = -Faces.a_n_u[iu,ju]
-            Tri.diag[ju] = Faces.a_P_u[iu,ju]
-            Tri.lower[ju] = -Faces.a_s_u[iu,ju]
-            Tri.RHS[ju] = (Faces.dPdx[iu,ju])
-
-            #West / East, Inlet BC, Outlet BC
-            if iu == 1:
-
-                Tri.RHS[ju] += (Faces.a_w_u[iu,ju]*var.u_inlet) 
-                Tri.RHS[ju] += (Faces.a_e_u[iu,ju]*Fields.u_old[iu+1,ju])
-            
-            elif iu == geo.Nx-1:
-                
-                Tri.diag[ju] -= Faces.a_e_u[iu,ju]
-                Tri.RHS[ju] += (Faces.a_w_u[iu,ju]*Fields.u[iu-1,ju]) 
-
-            else:
-
-                Tri.RHS[ju] += (Faces.a_w_u[iu,ju]*Fields.u[iu-1,ju]) 
-                Tri.RHS[ju] += (Faces.a_e_u[iu,ju]*Fields.u_old[iu+1,ju])
-
-            
-
-            # South wall BC
-            if ju == 0:
-
-                Tri.lower[ju] = 0
-                Tri.RHS[ju] += Faces.a_s_u[iu,ju] * 0
-
-            # North wall BC
-            if ju == geo.Ny-1:
-
-                Tri.upper[ju] = 0
-                Tri.RHS[ju] += Faces.a_n_u[iu,ju] * 0
-
-
-        ab = np.zeros((3, geo.Ny))
-        ab[0, 1:] = Tri.upper[:-1]
-        ab[1,:] = Tri.diag
-        ab[2,:-1] = Tri.lower[1:]
-        sol = solve_banded((1,1), ab, Tri.RHS)
-        Fields.u[iu,:] = sol
-            
-
-    Fields.u_psu = np.copy(Fields.u) 
-    Fields.u_psu[-1, :] = Fields.u_psu[-2, :]
-
     print('u_TDMA results')
-    print(np.array2string(np.flipud(Fields.u_psu.T),formatter={'float_kind': lambda x: f"{x:8.3f}"}, max_line_width= 1000000000))
+    print(np.array2string(np.flipud(Fields.u.T),formatter={'float_kind': lambda x: f"{x:8.5f}"}, max_line_width= 1000000000))

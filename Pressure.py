@@ -9,6 +9,17 @@ def Coeff_P(geo, var, Faces, Fields, Coupler):
     ip = 0
     jp = 0
 
+    i = 0
+    j = 0
+    
+    for i in range (geo.Nx+1):                                                                  # generates west/east faces, F = puA
+        for j in range (geo.Ny):    
+            Faces.F_we_psu[i,j] = var.rho  * Fields.u_psu[i,j] * geo.dy
+        
+    for i in range (geo.Nx):                                                                    # generates north/south faces, F = pvA
+        for j in range (geo.Ny+1):
+            Faces.F_ns_psu[i,j] = var.rho * Fields.v_psu[i,j] * geo.dx
+
 
     for ip in range (Nx):
         for jp in range (Ny):
@@ -21,6 +32,8 @@ def Coeff_P(geo, var, Faces, Fields, Coupler):
 
                 Coupler.d_we[ip,jp] = geo.dy / Faces.a_P_u[ip,jp]
 
+    ipp = 0
+    jpp = 0
 
     for ipp in range (Nx):
         for jpp in range (Ny):
@@ -60,7 +73,7 @@ def Coeff_P(geo, var, Faces, Fields, Coupler):
     for i in range(Nx):
         for j in range(Ny):
 
-            Coupler.b[i,j] = var.rho*(((Fields.u_psu[i,j]*geo.dy) - (Fields.u_psu[i+1,j]*geo.dy)) + ((Fields.v_psu[i,j]*geo.dx) - (Fields.v_psu[i,j+1]*geo.dx)))
+            Coupler.b[i,j] = Faces.F_we_psu[i,j] - Faces.F_we_psu[i+1,j] + Faces.F_ns_psu[i,j] - Faces.F_ns_psu[i,j+1]
             
     print('b')
     print(np.array2string(np.flipud(Coupler.b.T),formatter={'float_kind': lambda x: f"{x:10.3f}"}, max_line_width= 1000000000))
@@ -79,7 +92,13 @@ def TDMA_P(geo, var, Faces, Fields, Coupler, Tri):
     jp = 0
 
     Fields.P_prime_old = np.copy(Fields.P_prime) 
-    for ip in range (geo.Nx):
+    for ip in range (geo.Nx-1):
+
+        Tri.upper_P[:] = 0
+        Tri.lower_P[:] = 0
+        Tri.diag_P[:] = 0
+        Tri.RHS_P[:] = 0
+
         for jp in range (geo.Ny):
 
 
@@ -92,10 +111,10 @@ def TDMA_P(geo, var, Faces, Fields, Coupler, Tri):
             if ip == 0:
 
                 Tri.diag_P[jp] -= Coupler.a_EW_P[ip,jp]
-                Tri.RHS_P[jp] += Coupler.a_EW_P[ip+1,jp] * Fields.P_prime_old[ip+1,jp]
+                Tri.RHS_P[jp] += Coupler.a_EW_P[ip+1,jp] * Fields.P_prime[ip+1,jp]
 
             #East Dirchlet anchor
-            elif ip == geo.Nx-1:
+            elif ip == geo.Nx-2:
 
                 Tri.RHS_P[jp] += Coupler.a_EW_P[ip+1,jp] * 0
                 Tri.RHS_P[jp] += Coupler.a_EW_P[ip,jp] * Fields.P_prime[ip-1,jp]
@@ -104,7 +123,7 @@ def TDMA_P(geo, var, Faces, Fields, Coupler, Tri):
             else:
 
                 Tri.RHS_P[jp] += Coupler.a_EW_P[ip,jp]* Fields.P_prime[ip-1,jp]
-                Tri.RHS_P[jp] += Coupler.a_EW_P[ip+1,jp]*Fields.P_prime_old[ip+1,jp] 
+                Tri.RHS_P[jp] += Coupler.a_EW_P[ip+1,jp]*Fields.P_prime[ip+1,jp] 
 
             #South wall Zero-Gradiant
             if jp == 0:
@@ -124,7 +143,8 @@ def TDMA_P(geo, var, Faces, Fields, Coupler, Tri):
         ab[2,:-1] = Tri.lower_P[1:]
         sol = solve_banded((1,1), ab, Tri.RHS_P)
         Fields.P_prime[ip,:] = sol
-            
+
+        Fields.P_prime[-1,:] = 0
 
     print('P_TDMA results')
     print(np.array2string(np.flipud(Fields.P_prime.T),formatter={'float_kind': lambda x: f"{x:8.3f}"}, max_line_width= 1000000000))

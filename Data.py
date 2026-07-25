@@ -8,11 +8,14 @@ class Geometry:
         self.Nx = 8
         self.Ny = 8
 
-        self.lx = 1            # meters
-        self.ly = 0.5           # meters
+        self.lx = 0.01            # meters
+        self.ly = 0.01           # meters
 
         self.dx = self.lx / ( self.Nx - 1 )
         self.dy = self.ly / ( self.Ny - 1 )
+
+        self.ar = self.dx / self.dy
+        self.ra = 1/self.ar
 
 
 class Variables:
@@ -20,10 +23,10 @@ class Variables:
     def __init__(self, geo):
 
         
-        self.rho = 1
-        self.mu = 0.01
+        self.rho = 1000
+        self.mu = 0.001
 
-        self.u_inlet = 5.0     # m/s
+        self.u_lid = 0.01     # m/s
         self.v_inlet = 0.0
 
         self.De = (self.mu / geo.dx) * geo.dy
@@ -36,10 +39,11 @@ class Fields:
 
     def __init__(self, geo):
 
-        self.P = np.full((geo.Nx, geo.Ny), 0.3)
-        self.u = np.full((geo.Nx+1, geo.Ny), 0.5)
+        self.P = np.full((geo.Nx, geo.Ny), 0.0)
+        self.u = np.full((geo.Nx+1, geo.Ny), 0.0)
         self.v = np.full((geo.Nx, geo.Ny+1), 0.0)
         self.u_psu = np.zeros((geo.Nx+1, geo.Ny))              # field that holds psuedo u, the TDMA u solution, which has not yet been pressure corrected
+        self.u_tilde = np.zeros((geo.Nx+1, geo.Ny))
         self.u_old = np.zeros((geo.Nx+1, geo.Ny))
         self.v_old = np.zeros((geo.Nx, geo.Ny+1))
         self.v_psu = np.zeros((geo.Nx, geo.Ny+1))
@@ -54,6 +58,8 @@ class Faces:
 
         self.F_we = np.zeros((geo.Nx+1, geo.Ny))           # West East faces for the scalar CV
         self.F_ns = np.zeros((geo.Nx, geo.Ny+1))           # North South faces for the scalar CV
+        self.F_we_psu = np.zeros((geo.Nx+1, geo.Ny))           # West East faces for the scalar CV
+        self.F_ns_psu = np.zeros((geo.Nx, geo.Ny+1))           # North South faces for the scalar CV
 
         self.Fw_u = np.zeros((geo.Nx+1, geo.Ny))            # Convection Flux for western u CV 
         self.Fe_u = np.zeros((geo.Nx+1, geo.Ny))            # Convection Flux for eastern u CV 
@@ -86,10 +92,15 @@ class TDMA:
 
     def __init__ (self,geo):
 
-        self.upper = np.zeros((geo.Ny))
-        self.diag = np.zeros((geo.Ny))
-        self.lower = np.zeros((geo.Ny))
-        self.RHS = np.zeros((geo.Ny))
+        self.upper_col = np.zeros((geo.Ny))
+        self.diag_col = np.zeros((geo.Ny))
+        self.lower_col = np.zeros((geo.Ny))
+        self.RHS_col = np.zeros((geo.Ny))
+
+        self.upper_row = np.zeros((geo.Ny-1))
+        self.diag_row = np.zeros((geo.Ny-1))
+        self.lower_row = np.zeros((geo.Ny-1))
+        self.RHS_row = np.zeros((geo.Ny-1))
 
         self.upper_v = np.zeros((geo.Ny-1))
         self.diag_v = np.zeros((geo.Ny-1))

@@ -5,6 +5,8 @@ def correction(geo, var, Faces, Fields, Coupler, Tri):
 
     i = 0
     j = 0
+    print('P_prime results')
+    print(np.array2string(np.flipud(Fields.P_prime.T),formatter={'float_kind': lambda x: f"{x:8.3f}"}, max_line_width= 1000000000))
 
     for i in range (geo.Nx):
         for j in range (geo.Ny):
@@ -32,11 +34,9 @@ def correction(geo, var, Faces, Fields, Coupler, Tri):
             
             Fields.v_psu[i,j] = 0.7*Fields.v_psu[i,j] + (1 - 0.7)*Fields.v_old[i,j]
 
-            if Fields.v_psu[i,j] != 0:
+            Fields.v[i,j] = Fields.v_psu[i,j] + (Coupler.d_ns[i,j-1]*(Fields.P_prime[i,j]-Fields.P_prime[i,j+1])) 
 
-                Fields.v[i,j] = Fields.v_psu[i,j] + (Coupler.d_ns[i,j-1]*(Fields.P_prime[i,j+1]-Fields.P_prime[i,j])) 
 
-    Fields.v[-1, :] = Fields.v[-2, :]
 
     print('v final results')
     print(np.array2string(np.flipud(Fields.v.T),formatter={'float_kind': lambda x: f"{x:8.3f}"}, max_line_width= 1000000000))
@@ -44,4 +44,3 @@ def correction(geo, var, Faces, Fields, Coupler, Tri):
     print(np.array2string(np.flipud(Fields.u.T),formatter={'float_kind': lambda x: f"{x:8.3f}"}, max_line_width= 1000000000))
     print('P final results')
     print(np.array2string(np.flipud(Fields.P.T),formatter={'float_kind': lambda x: f"{x:8.3f}"}, max_line_width= 1000000000))
-
