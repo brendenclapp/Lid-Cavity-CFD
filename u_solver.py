@@ -138,17 +138,17 @@ def TDMA_u(var, geo, Fields, Faces, Tri):
 
                 if i == 1:
 
-                    #Residual
+                 
                     Tri.RHS_col[k] += (-Faces.a_e_u[i,j]*Fields.u[i+1,j])
 
                 elif i == geo.Nx-1:
 
-                    #Residual
+                  
                     Tri.RHS_col[k] += (-Faces.a_w_u[i,j]*Fields.u[i-1,j])
 
                 else:
 
-                    #Residual
+                    
                     Tri.RHS_col[k] += (-Faces.a_w_u[i,j]*Fields.u[i-1,j] + -Faces.a_e_u[i,j]*Fields.u[i+1,j])
 
 

@@ -103,75 +103,139 @@ def Coeff_v(geo, var, Fields, Faces):
 
 def TDMA_v(var, geo, Fields, Faces, Tri):
      
-    iv = 0
-    jv = 0
-    ittv = 0
-
-    for iv in range (geo.Nx):
-        for jv in range (1, geo.Ny):
-
-            k = jv - 1
-             
-
-            Tri.upper_v[k] = -Faces.a_n_v[iv,jv]
-            Tri.diag_v[k] = Faces.a_P_v[iv,jv]
-            Tri.lower_v[k] = -Faces.a_s_v[iv,jv]
-            Tri.RHS_v[k] = (-Faces.dPdy[iv,jv])
-
-
-            # West Inlet, dirchlett
-            if iv == 0:         
-                 
-                Tri.RHS_v[k] += (Faces.a_w_v[iv,jv]*var.v_inlet) 
-                Tri.RHS_v[k] += (Faces.a_e_v[iv,jv]*Fields.v[iv+1,jv])
-
-
-            # East outlet, Zero-gradiant
-            elif iv == geo.Nx-1:
-                 
-                 Tri.diag_v[k] -= Faces.a_e_v[iv,jv]
-                 Tri.RHS_v[k] += (Faces.a_e_v[iv,jv]*Fields.v[iv,jv])
-
-            # Interior
-            else:
-                 
-                Tri.RHS_v[k] += (Faces.a_w_v[iv,jv]*Fields.v[iv-1,jv]) 
-                Tri.RHS_v[k] += (Faces.a_e_v[iv,jv]*Fields.v[iv+1,jv])
-
-            # South wall
-            if jv == 1:
-                 
-              
-                Tri.lower_v[k] = 0
-                Tri.RHS_v[k] += Faces.a_s_v[iv,jv] * 0
-
-            # North wall
-            elif jv == geo.Ny-1:
-                    
-
-                Tri.upper_v[k] = 0
-                Tri.RHS_v[k] += Faces.a_n_v[iv,jv] * 0
-
-        print('-------------------------------------------------------------------------')
-        print('column', iv)
-        print('lower')
-        print(np.array2string(Tri.lower_v, precision=6))
-        print('diag')
-        print(np.array2string(Tri.diag_v, precision=6))
-        print('upper')
-        print(np.array2string(Tri.upper_v, precision=6))
-        print('RHS')
-        print(np.array2string(Tri.RHS_v, precision=6))
-
-        ab = np.zeros((3, geo.Ny-1))
-        ab[0, 1:] = Tri.upper_v[:-1]
-        ab[1,:] = Tri.diag_v
-        ab[2,:-1] = Tri.lower_v[1:]
-        sol = solve_banded((1,1), ab, Tri.RHS_v)
-        Fields.v[iv,1:geo.Ny] = sol
+#========================================== COLUMNS ============================
+        for uitt in range (2):
+            for i in range(geo.Nx):
     
+                Tri.upper_colv[:] = 0
+                Tri.diag_colv[:]  = 0
+                Tri.lower_colv[:] = 0
+                Tri.RHS_colv[:]   = 0
+    
+                for j in range(1,geo.Ny):
+    
+                    k = j - 1
+    
+                    Tri.upper_colv[k] = Faces.a_n_v[i,j]
+                    Tri.diag_colv[k]  = Faces.a_P_v[i,j]*(1.2)
+                    Tri.lower_colv[k] = Faces.a_s_v[i,j]
+                    Tri.RHS_colv[k] = Faces.dPdy[i,j]
+    
+    
+                    if i == 0:
+    
+                       
+                        Tri.RHS_colv[k] += (-Faces.a_e_v[i,j]*Fields.v[i+1,j])
+    
+                    elif i == geo.Nx-1:
+    
+                        
+                        Tri.RHS_colv[k] += (-Faces.a_w_v[i,j]*Fields.v[i-1,j])
+    
+                    else:
+    
+                       
+                        Tri.RHS_colv[k] += (-Faces.a_w_v[i,j]*Fields.v[i-1,j] + -Faces.a_e_v[i,j]*Fields.v[i+1,j])
+    
+    
+        
+                    if j == 1:
+    
+                        Tri.lower_colv[k] = 0
+    
+                        #Residual
+                        Tri.RHS_colv[k] += -Faces.a_P_v[i,j]*Fields.v[i,j] -Faces.a_n_v[i,j]*Fields.v[i,j+1]
+    
+                    elif j == geo.Ny-1:
+    
+                        Tri.upper_colv[k] = 0
+    
+                        Tri.RHS_colv[k] += Faces.a_n_v[i,j]*0
+    
+                        #Residual
+                        Tri.RHS_colv[k] += -Faces.a_P_v[i,j]*Fields.v[i,j] -Faces.a_s_v[i,j]*Fields.v[i,j-1]
+    
+                    else:
+    
+                        #Residual
+                        Tri.RHS_colv[k] += -Faces.a_P_v[i,j]*Fields.v[i,j] -Faces.a_s_v[i,j]*Fields.v[i,j-1] -Faces.a_n_v[i,j]*Fields.v[i,j+1]
+    
+    
+    
+                ab = np.zeros((3, geo.Ny-1))
+    
+                ab[0,1:] = Tri.upper_colv[:-1]
+                ab[1,:]  = Tri.diag_colv
+                ab[2,:-1] = Tri.lower_colv[1:]
+                sol = solve_banded((1,1), ab, Tri.RHS_colv)
+                Fields.v_tilde[i,1:-1] = sol
+    
+            for i in range(geo.Nx):
+                for j in range(1, geo.Ny):
+    
+                    Fields.v[i,j] = Fields.v[i,j] + Fields.v_tilde[i,j]
+            
+    # ================================================= ROWS =========================================================
 
-    Fields.v_psu = np.copy(Fields.v) 
-
-    print('v_TDMA results')
-    print(np.array2string(np.flipud(Fields.v_psu.T),formatter={'float_kind': lambda x: f"{x:8.3f}"}, max_line_width= 1000000000))
+            for j in range(1, geo.Ny):
+                Tri.upper_rowv[:] = 0
+                Tri.diag_rowv[:]  = 0
+                Tri.lower_rowv[:] = 0
+                Tri.RHS_rowv[:]   = 0
+                for i in range(geo.Nx):
+    
+                    k = i
+    
+                    Tri.upper_rowv[k] = Faces.a_e_v[i,j]
+                    Tri.diag_rowv[k]  = Faces.a_P_v[i,j]*(1.2)
+                    Tri.lower_rowv[k] = Faces.a_w_v[i,j]
+                    Tri.RHS_rowv[k]   = Faces.dPdy[i,j]
+    
+                    if i == 0:
+    
+                        Tri.lower_rowv[k] = 0
+    
+                        #Residiual
+                        Tri.RHS_rowv[k] += -Faces.a_e_v[i,j]*Fields.v[i+1,j] - Faces.a_P_v[i,j]*Fields.v[i,j]
+    
+                    elif i == geo.Nx-1:
+    
+                        Tri.upper_rowv[k] = 0
+    
+                        #Residiual
+                        Tri.RHS_rowv[k] += -Faces.a_w_v[i,j]*Fields.v[i-1,j] - Faces.a_P_v[i,j]*Fields.v[i,j]
+    
+                    else:
+    
+                        #Residiual
+                        Tri.RHS_rowv[k] += -Faces.a_w_v[i,j]*Fields.v[i-1,j] - Faces.a_P_v[i,j]*Fields.v[i,j] -Faces.a_e_v[i,j]*Fields.v[i+1,j]
+    
+                    if j == 1:
+    
+                        Tri.RHS_rowv[k] += -Faces.a_n_v[i,j]*Fields.v[i,j+1]
+    
+                    elif j == geo.Ny-1:
+    
+                        Tri.RHS_rowv[k] += -Faces.a_s_v[i,j]*Fields.v[i,j-1] + -Faces.a_n_v[i,j]*0
+    
+                    else:
+    
+                        Tri.RHS_rowv[k] += -Faces.a_n_v[i,j]*Fields.v[i,j+1] - Faces.a_s_v[i,j]*Fields.v[i,j-1]
+    
+                ab = np.zeros((3, geo.Nx))
+    
+                ab[0,1:] = Tri.upper_rowv[:-1]
+                ab[1,:]  = Tri.diag_rowv
+                ab[2,:-1] = Tri.lower_rowv[1:]
+    
+                sol = solve_banded((1,1), ab, Tri.RHS_rowv)
+    
+                Fields.v_tilde[:, j] = sol
+    
+            for i in range(geo.Nx):
+                    for j in range(1, geo.Ny):
+                        Fields.v[i,j] = Fields.v[i,j] + Fields.v_tilde[i,j]
+    
+      
+        print('v_TDMA results')
+        print(np.array2string(np.flipud(Fields.v.T),formatter={'float_kind': lambda x: f"{x:8.5f}"}, max_line_width= 1000000000))

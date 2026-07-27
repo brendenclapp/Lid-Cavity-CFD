@@ -44,6 +44,7 @@ class Fields:
         self.v = np.full((geo.Nx, geo.Ny+1), 0.0)
         self.u_psu = np.zeros((geo.Nx+1, geo.Ny))              # field that holds psuedo u, the TDMA u solution, which has not yet been pressure corrected
         self.u_tilde = np.zeros((geo.Nx+1, geo.Ny))
+        self.v_tilde = np.zeros((geo.Nx, geo.Ny+1))
         self.u_old = np.zeros((geo.Nx+1, geo.Ny))
         self.v_old = np.zeros((geo.Nx, geo.Ny+1))
         self.v_psu = np.zeros((geo.Nx, geo.Ny+1))
@@ -101,6 +102,16 @@ class TDMA:
         self.diag_row = np.zeros((geo.Ny-1))
         self.lower_row = np.zeros((geo.Ny-1))
         self.RHS_row = np.zeros((geo.Ny-1))
+
+        self.upper_colv = np.zeros((geo.Ny-1))
+        self.diag_colv = np.zeros((geo.Ny-1))
+        self.lower_colv = np.zeros((geo.Ny-1))
+        self.RHS_colv = np.zeros((geo.Ny-1))
+
+        self.upper_rowv = np.zeros((geo.Ny))
+        self.diag_rowv = np.zeros((geo.Ny))
+        self.lower_rowv = np.zeros((geo.Ny))
+        self.RHS_rowv = np.zeros((geo.Ny))
 
         self.upper_v = np.zeros((geo.Ny-1))
         self.diag_v = np.zeros((geo.Ny-1))

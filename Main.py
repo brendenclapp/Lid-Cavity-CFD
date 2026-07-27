@@ -30,7 +30,7 @@ for mit in range (1):
 
     #Step 2 Momentum solve
     u_solver.TDMA_u(var, geo, Fields, Faces, Tri)
-    #v_solver.TDMA_v(var, geo, Fields, Faces, Tri)
+    v_solver.TDMA_v(var, geo, Fields, Faces, Tri)
 
     #Step 3 Pressure Coupling
     #Pressure.Coeff_P(geo, var, Faces, Fields, Coupler)
