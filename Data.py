@@ -33,7 +33,6 @@ class Variables:
         self.Dw = (self.mu / geo.dx) * geo.dy
         self.Dn = (self.mu / geo.dy) * geo.dx
         self.Ds = (self.mu / geo.dy) * geo.dx
-        self.D_wall = self.Ds*2
 
 class Fields:        
 
@@ -48,7 +47,7 @@ class Fields:
         self.u_old = np.zeros((geo.Nx+1, geo.Ny))
         self.v_old = np.zeros((geo.Nx, geo.Ny+1))
         self.v_psu = np.zeros((geo.Nx, geo.Ny+1))
-        self.P_prime = np.zeros((geo.Nx, geo.Ny))
+        self.Pp = np.zeros((geo.Nx, geo.Ny))
         self.P_prime_old = np.zeros((geo.Nx, geo.Ny))
 
 
@@ -88,6 +87,11 @@ class Faces:
 
         self.dPdy = np.zeros_like(self.a_w_v)               # vertical pressure gradiant located at each ( shared w/ ) V node
 
+        self.a_w_P = np.zeros((geo.Nx, geo.Ny))          
+        self.a_e_P = np.zeros((geo.Nx, geo.Ny))          
+        self.a_n_P = np.zeros((geo.Nx, geo.Ny))            
+        self.a_s_P = np.zeros((geo.Nx, geo.Ny))           
+        self.a_P_P = np.zeros((geo.Nx, geo.Ny))            
 
 class TDMA:
 

@@ -16,7 +16,6 @@ print("Starting SIMPLE Algorithm Solver...")
 print(f"Grid: {geo.Nx}x{geo.Ny} | Re: {var.rho * var.u_lid * geo.lx / var.mu:.1f}")
 
 
-
 #BCs
 Fields.u[0,:] = 0; Fields.u[geo.Nx, :] = 0 
 Fields.v[:,0] = 0; Fields.v[:geo.Ny-1] = 0
@@ -33,8 +32,8 @@ for mit in range (1):
     v_solver.TDMA_v(var, geo, Fields, Faces, Tri)
 
     #Step 3 Pressure Coupling
-    #Pressure.Coeff_P(geo, var, Faces, Fields, Coupler)
-    #Pressure.TDMA_P(geo, var, Faces, Fields, Coupler, Tri)
+    Pressure.Coeff_P(geo, var, Faces, Fields, Coupler)
+    Pressure.TDMA_P(geo, var, Faces, Fields, Coupler, Tri)
 
     #Step 4 Correction
-    #correction.correction(geo, var, Faces, Fields, Coupler, Tri)
+    correction.correction(geo, var, Faces, Fields, Coupler, Tri)

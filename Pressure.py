@@ -3,150 +3,240 @@ from scipy.linalg import solve_banded
 
 def Coeff_P(geo, var, Faces, Fields, Coupler):
 
-    Nx = geo.Nx
-    Ny = geo.Ny
+    Coupler.b[:] = 0.0
+    Fields.P[0,0] = 0
 
-    ip = 0
-    jp = 0
+    for i in range(geo.Nx):
+        for j in range(geo.Ny):
 
-    i = 0
-    j = 0
-    
-    for i in range (geo.Nx+1):                                                                  # generates west/east faces, F = puA
-        for j in range (geo.Ny):    
-            Faces.F_we_psu[i,j] = var.rho  * Fields.u_psu[i,j] * geo.dy
-        
-    for i in range (geo.Nx):                                                                    # generates north/south faces, F = pvA
-        for j in range (geo.Ny+1):
-            Faces.F_ns_psu[i,j] = var.rho * Fields.v_psu[i,j] * geo.dx
-
-
-    for ip in range (Nx):
-        for jp in range (Ny):
-
-            if Faces.a_P_u[ip,jp] < 1e-12:
-
-                Coupler.d_we[ip,jp] = 0
-
-            else:
-
-                Coupler.d_we[ip,jp] = geo.dy / Faces.a_P_u[ip,jp]
-
-    ipp = 0
-    jpp = 0
-
-    for ipp in range (Nx):
-        for jpp in range (Ny):
-
-            if Faces.a_P_v[ipp,jpp] < 1e-12:
-
-                 Coupler.d_ns[ipp,jpp] = 0
-
-            else:
-
-                Coupler.d_ns[ipp,jpp] = geo.dx / Faces.a_P_v[ipp,jpp]
-    
-    Coupler.a_NS_P[:,0] = 0
-    Coupler.a_NS_P[:,-1] = 0
-
-    i = 0
-    j = 0
-    for i in range (Nx+1):
-        for j in range (Ny):
-
-            Coupler.a_EW_P[i,j] = var.rho * Coupler.d_we[i,j] * geo.dy
-
-    i = 0
-    j = 0
-    for i in range (Nx):
-        for j in range (Ny+1):
-
-            Coupler.a_NS_P[i,j] = var.rho * Coupler.d_ns[i,j] * geo.dx
-
-    print('EW')
-    print(np.array2string(np.flipud(Coupler.a_EW_P.T),formatter={'float_kind': lambda x: f"{x:10.3f}"}, max_line_width= 1000000000))
-    print('NS')
-    print(np.array2string(np.flipud(Coupler.a_NS_P.T),formatter={'float_kind': lambda x: f"{x:10.3f}"}, max_line_width= 1000000000))
-
-    i = 0
-    j = 0
-    for i in range(Nx):
-        for j in range(Ny):
-
-            Coupler.b[i,j] = Faces.F_we_psu[i,j] - Faces.F_we_psu[i+1,j] + Faces.F_ns_psu[i,j] - Faces.F_ns_psu[i,j+1]
+            #================= EAST ==========================
+            if i == geo.Nx-1:
             
-    print('b')
-    print(np.array2string(np.flipud(Coupler.b.T),formatter={'float_kind': lambda x: f"{x:10.3f}"}, max_line_width= 1000000000))
+                Faces.a_e_P[i,j] = 0
 
-    i = 0
-    j = 0
-    for i in range (Nx):
-        for j in range (Ny):
+            else:
+                Faces.a_e_P[i,j] = -((var.rho*geo.dy*geo.dy)/ Faces.a_P_u[i+1,j])
 
-            Coupler.a_P_P[i,j] = Coupler.a_EW_P[i,j] + Coupler.a_EW_P[i+1,j] + Coupler.a_NS_P[i,j] + Coupler.a_NS_P[i,j+1]
 
+            #================== WEST ==================================
+            if i == 0:
+
+                Faces.a_w_P[i,j] = 0
+
+            else:
+                Faces.a_w_P[i,j] = -((var.rho*geo.dy*geo.dy)/ Faces.a_P_u[i,j])
+
+            #======================== NORTH====================================
+
+            if j == geo.Ny-1:
+
+                Faces.a_n_P[i,j] = 0
+
+            elif Faces.a_P_v[i,j+1] < 1e-12:
+
+                Faces.a_n_P[i,j] = 0
+
+            else:
+                Faces.a_n_P[i,j] = -((var.rho*geo.dx*geo.dx)/ Faces.a_P_v[i,j+1])
+
+            #======================= SOUTH ====================================
+            if j == 0:
+            
+                Faces.a_s_P[i,j] = 0
+
+            elif Faces.a_P_v[i,j] < 1e-12:
+
+                Faces.a_s_P[i,j] = 0
+
+            else:
+
+                Faces.a_s_P[i,j] = -((var.rho*geo.dx*geo.dx)/ Faces.a_P_v[i,j])
+
+            # ====================== CENTER ===============================
+            Faces.a_P_P[i,j] = (-Faces.a_e_P[i,j]) + (-Faces.a_w_P[i,j]) + (-Faces.a_n_P[i,j]) + (-Faces.a_s_P[i,j])
+
+            #======================== MASS IMBALANCE ===================================
+            if i == 0:
+
+                Coupler.b[i,j] += (var.rho*Fields.u[i+1,j])*geo.dy
+
+            elif i == geo.Nx-1:
+
+                Coupler.b[i,j] += -(var.rho*Fields.u[i,j])*geo.dy
+
+            else:
+
+                Coupler.b[i,j] += (((var.rho*Fields.u[i+1,j])-(var.rho*Fields.u[i,j]))*geo.dy)
+
+            if j == 0:
+
+                 Coupler.b[i,j] += var.rho*Fields.v[i,j+1]*geo.dx
+
+            elif j == geo.Ny-1:
+
+                Coupler.b[i,j] += -(var.rho*Fields.v[i,j])*geo.dx
+
+            else:
+
+                Coupler.b[i,j] += ((var.rho*Fields.v[i,j+1])-(var.rho*Fields.v[i,j]))*geo.dx
+
+                 
+    print('a_w_P')
+    print(np.array2string(np.flipud(Faces.a_w_P.T),formatter={'float_kind': lambda x: f"{x:8.3f}"}, max_line_width= 1000000000))
+    print('a_e_P')
+    print(np.array2string(np.flipud(Faces.a_e_P.T),formatter={'float_kind': lambda x: f"{x:8.3f}"}, max_line_width= 1000000000))
+    print('a_n_P')
+    print(np.array2string(np.flipud(Faces.a_n_P.T),formatter={'float_kind': lambda x: f"{x:8.3f}"}, max_line_width= 1000000000))
+    print('a_s_P')
+    print(np.array2string(np.flipud(Faces.a_s_P.T),formatter={'float_kind': lambda x: f"{x:8.3f}"}, max_line_width= 1000000000))
+    print('a_P_P')
+    print(np.array2string(np.flipud(Faces.a_P_P.T),formatter={'float_kind': lambda x: f"{x:8.3f}"}, max_line_width= 1000000000))
+
+            
 
 def TDMA_P(geo, var, Faces, Fields, Coupler, Tri):
 
-    ip = 0
-    jp = 0
 
-    Fields.P_prime_old = np.copy(Fields.P_prime) 
-    for ip in range (geo.Nx-1):
+    #========================================== COLUMNS ============================
+    for ittp in range (1):
+        
+        for i in range (geo.Nx):
+            Tri.upper_P[:] = 0
+            Tri.diag_P[:]  = 0
+            Tri.lower_P[:] = 0
+            Tri.RHS_P[:]   = 0
+            for j in range (geo.Ny):
 
-        Tri.upper_P[:] = 0
-        Tri.lower_P[:] = 0
-        Tri.diag_P[:] = 0
-        Tri.RHS_P[:] = 0
+                Tri.upper_P[j] = Faces.a_n_P[i,j]
+                Tri.diag_P[j]  = Faces.a_P_P[i,j]
+                Tri.lower_P[j] = Faces.a_s_P[i,j]
+                Tri.RHS_P[j]   = -Coupler.b[i,j]
 
-        for jp in range (geo.Ny):
+                if i == 0:
+                    
+                    Tri.RHS_P[j] += (-Faces.a_e_P[i,j]*Fields.Pp[i+1,j])
+
+                elif i == geo.Nx-1:
+
+                    Tri.RHS_P[j] += (-Faces.a_w_P[i,j]*Fields.Pp[i-1,j])
+
+                else:
+                            
+                    Tri.RHS_P[j] += (-Faces.a_w_P[i,j]*Fields.Pp[i-1,j] + -Faces.a_e_P[i,j]*Fields.Pp[i+1,j])
 
 
-            Tri.upper_P[jp] = -Coupler.a_NS_P[ip,jp+1]
-            Tri.diag_P[jp] = Coupler.a_P_P[ip,jp]
-            Tri.lower_P[jp] = -Coupler.a_NS_P[ip,jp]
-            Tri.RHS_P[jp] = Coupler.b[ip,jp]
+                if j == 0:
 
-            #West Zero-Gradiant
-            if ip == 0:
+                    Tri.lower_P[j] = 0
+                    
+                    #Residual
+                    Tri.RHS_P[j] += -Faces.a_P_P[i,j]*Fields.Pp[i,j] -Faces.a_n_P[i,j]*Fields.Pp[i,j+1]
 
-                Tri.diag_P[jp] -= Coupler.a_EW_P[ip,jp]
-                Tri.RHS_P[jp] += Coupler.a_EW_P[ip+1,jp] * Fields.P_prime[ip+1,jp]
+                elif j == geo.Ny-1:
 
-            #East Dirchlet anchor
-            elif ip == geo.Nx-2:
+                    Tri.upper_P[j] = 0
 
-                Tri.RHS_P[jp] += Coupler.a_EW_P[ip+1,jp] * 0
-                Tri.RHS_P[jp] += Coupler.a_EW_P[ip,jp] * Fields.P_prime[ip-1,jp]
+                    #Residual
+                    Tri.RHS_P[j] += -Faces.a_P_P[i,j]*Fields.Pp[i,j] -Faces.a_s_P[i,j]*Fields.Pp[i,j-1]
 
-            #Interior
-            else:
+                else:
 
-                Tri.RHS_P[jp] += Coupler.a_EW_P[ip,jp]* Fields.P_prime[ip-1,jp]
-                Tri.RHS_P[jp] += Coupler.a_EW_P[ip+1,jp]*Fields.P_prime[ip+1,jp] 
+                    Tri.RHS_P[j] += -Faces.a_P_P[i,j]*Fields.Pp[i,j] -Faces.a_s_P[i,j]*Fields.Pp[i,j-1] -Faces.a_n_P[i,j]*Fields.Pp[i,j+1]
+            
 
-            #South wall Zero-Gradiant
-            if jp == 0:
+            ab = np.zeros((3, geo.Ny))
+            
+            ab[0,1:] = Tri.upper_P[:-1]
+            ab[1,:]  = Tri.diag_P
+            ab[2,:-1] = Tri.lower_P[1:]
+            sol = solve_banded((1,1), ab, Tri.RHS_P)
+            Fields.Pp[i,:] = sol
 
-                Tri.lower_P[jp] = 0
-                Tri.diag_P[jp] -= Coupler.a_NS_P[ip,jp]
+            print('-------------------------------------------------------------------------')
+            print('column', i)
+            print('lower')
+            print(np.array2string(np.flipud(Tri.upper_P.T),formatter={'float_kind': lambda x: f"{x:8.5f}"}, max_line_width= 1000000000))
+            print('diag')
+            print(np.array2string(np.flipud(Tri.diag_P.T),formatter={'float_kind': lambda x: f"{x:8.5f}"}, max_line_width= 1000000000))
+            print('upper')
+            print(np.array2string(np.flipud(Tri.lower_P.T),formatter={'float_kind': lambda x: f"{x:8.5f}"}, max_line_width= 1000000000))
+            print('RHS')
+            print(np.array2string(np.flipud(Tri.RHS_P.T),formatter={'float_kind': lambda x: f"{x:8.5f}"}, max_line_width= 1000000000))
 
-            #North wall Zero-Gradiant
-            elif jp == geo.Ny-1:
+        print('P_TDMA results')
+        print(np.array2string(np.flipud(Fields.Pp.T),formatter={'float_kind': lambda x: f"{x:8.5f}"}, max_line_width= 1000000000))
+                
+                    
 
-                Tri.upper_P[jp] = 0
-                Tri.diag_P[jp] -= Coupler.a_NS_P[ip,jp+1]
+        #========================================== ROWS ============================
+        for j in range (geo.Ny):
+            Tri.upper_P[:] = 0
+            Tri.diag_P[:]  = 0
+            Tri.lower_P[:] = 0
+            Tri.RHS_P[:]   = 0
+            for i in range (geo.Nx):
 
-        ab = np.zeros((3, geo.Ny))
-        ab[0, 1:] = Tri.upper_P[:-1]
-        ab[1,:] = Tri.diag_P
-        ab[2,:-1] = Tri.lower_P[1:]
-        sol = solve_banded((1,1), ab, Tri.RHS_P)
-        Fields.P_prime[ip,:] = sol
+                Tri.upper_P[i] = Faces.a_e_P[i,j]
+                Tri.diag_P[i]  = Faces.a_P_P[i,j]
+                Tri.lower_P[i] = Faces.a_w_P[i,j]
+                Tri.RHS_P[i]   = -Coupler.b[i,j]
 
-        Fields.P_prime[-1,:] = 0
+                if i == 0:
 
+                    Tri.lower_P[i] = 0
+
+                    #Residiual
+                    Tri.RHS_P[i] += -Faces.a_e_P[i,j]*Fields.Pp[i+1,j] - Faces.a_P_P[i,j]*Fields.Pp[i,j]
+
+                elif i == geo.Nx-1:
+                
+                    Tri.upper_P[i] = 0
+
+                    #Residiual
+                    Tri.RHS_P[i] += -Faces.a_w_P[i,j]*Fields.Pp[i-1,j] - Faces.a_P_P[i,j]*Fields.Pp[i,j]
+
+                else:
+                
+                    #Residiual
+                    Tri.RHS_P[i] += -Faces.a_w_P[i,j]*Fields.Pp[i-1,j] - Faces.a_P_P[i,j]*Fields.Pp[i,j] -Faces.a_e_P[i,j]*Fields.Pp[i+1,j]
+
+                if j == 0:
+                
+                    Tri.RHS_P[i] += -Faces.a_n_P[i,j]*Fields.Pp[i,j+1]
+
+                elif j == geo.Ny-1:
+
+                    Tri.RHS_P[i] += -Faces.a_s_P[i,j]*Fields.Pp[i,j-1] 
+
+                else:
+
+                    Tri.RHS_P[i] += -Faces.a_n_P[i,j]*Fields.Pp[i,j+1] - Faces.a_s_P[i,j]*Fields.Pp[i,j-1]
+
+
+            ab = np.zeros((3, geo.Nx))
+            
+            ab[0,1:] = Tri.upper_P[:-1]
+            ab[1,:]  = Tri.diag_P
+            ab[2,:-1] = Tri.lower_P[1:]
+            sol = solve_banded((1,1), ab, Tri.RHS_P)
+            Fields.Pp[:,j] = sol
+
+
+            print('-------------------------------------------------------------------------')
+            print('column', i)
+            print('lower')
+            print(np.array2string(np.flipud(Tri.upper_P.T),formatter={'float_kind': lambda x: f"{x:8.5f}"}, max_line_width= 1000000000))
+            print('diag')
+            print(np.array2string(np.flipud(Tri.diag_P.T),formatter={'float_kind': lambda x: f"{x:8.5f}"}, max_line_width= 1000000000))
+            print('upper')
+            print(np.array2string(np.flipud(Tri.lower_P.T),formatter={'float_kind': lambda x: f"{x:8.5f}"}, max_line_width= 1000000000))
+            print('RHS')
+            print(np.array2string(np.flipud(Tri.RHS_P.T),formatter={'float_kind': lambda x: f"{x:8.5f}"}, max_line_width= 1000000000))
+
+    
+        
     print('P_TDMA results')
-    print(np.array2string(np.flipud(Fields.P_prime.T),formatter={'float_kind': lambda x: f"{x:8.3f}"}, max_line_width= 1000000000))
-
-
+    print(np.array2string(np.flipud(Fields.Pp.T),formatter={'float_kind': lambda x: f"{x:8.5f}"}, max_line_width= 1000000000))
+    
+    
+        

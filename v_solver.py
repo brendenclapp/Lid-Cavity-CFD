@@ -15,7 +15,7 @@ def Coeff_v(geo, var, Fields, Faces):
 
                     ce = var.rho*(Fields.u[i,j] + Fields.u[i,j-1])*0.5
                     de = var.mu * geo.dy / geo.dx
-                    we = (var.mu * geo.dx)/ 3*geo.dy
+                    we = (var.mu * geo.dx)/ (3*geo.dy)
                     
                     Faces.a_e_v[i,j] = -((abs(ce)-ce)/2)*geo.dx - de - we
 
@@ -31,7 +31,7 @@ def Coeff_v(geo, var, Fields, Faces):
                     Faces.a_e_v[i,j] = -((abs(ce)-ce)/2)*geo.dy - de
     
             #===================================== WEST ======================================================== 
-                # Left Wall
+                # Right Wall
                 if i == 0:
 
                     Faces.a_w_v[i,j] = 0
@@ -40,7 +40,7 @@ def Coeff_v(geo, var, Fields, Faces):
 
                     cw = var.rho*(Fields.u[i+1,j] + Fields.u[i+1,j-1])*0.5
                     dw = var.mu * geo.dy / geo.dx
-                    ww = (var.mu * geo.dx)/ 3*geo.dy
+                    ww = (var.mu * geo.dx)/ (3*geo.dy)
         
                     Faces.a_w_v[i,j] = -((abs(cw)+cw)/2)*geo.dy - dw - ww
 
@@ -73,13 +73,13 @@ def Coeff_v(geo, var, Fields, Faces):
 
                     Faces.a_P_v[i,j] = (((abs(cn)-cn)/2)*geo.dx + dn) + (((abs(cs)+cs)/2)*geo.dx + ds) \
                                         + ((((abs(ce)-ce)/2)*geo.dy + de) + (3*var.mu*geo.dx)/geo.dy)
-                #Top Wall
-                elif j == geo.Ny-1:
+            #Right Wall
+                elif i == geo.Nx-1:
 
                     Faces.a_P_v[i,j] = (((abs(cn)-cn)/2)*geo.dx + dn) + (((abs(cs)+cs)/2)*geo.dx + ds) \
                                         + ((((abs(cw)+cw)/2)*geo.dy + de) + (3*var.mu*geo.dx)/geo.dy)
 
-                # Central A Interior
+            # Central A Interior
                 else:
                     Faces.a_P_v[i,j] = (((abs(ce)-ce)/2)*geo.dy + de) + (((abs(cw)+cw)/2)*geo.dy + dw) \
                                     + (((abs(cn)-cn)/2)*geo.dx + dn) + ((abs(cs)+cs)/2)*geo.dx + ds
