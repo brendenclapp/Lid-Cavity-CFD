@@ -32,7 +32,7 @@ def Coeff_P(geo, var, Faces, Fields, Coupler):
 
                 Faces.a_n_P[i,j] = 0
 
-            elif Faces.a_P_v[i,j+1] < 1e-12:
+            elif Faces.a_P_v[i,j+1] == 0:
 
                 Faces.a_n_P[i,j] = 0
 
@@ -44,7 +44,7 @@ def Coeff_P(geo, var, Faces, Fields, Coupler):
             
                 Faces.a_s_P[i,j] = 0
 
-            elif Faces.a_P_v[i,j] < 1e-12:
+            elif Faces.a_P_v[i,j] == 0:
 
                 Faces.a_s_P[i,j] = 0
 
@@ -80,7 +80,7 @@ def Coeff_P(geo, var, Faces, Fields, Coupler):
 
                 Coupler.b[i,j] += ((var.rho*Fields.v[i,j+1])-(var.rho*Fields.v[i,j]))*geo.dx
 
-                 
+    """      
     print('a_w_P')
     print(np.array2string(np.flipud(Faces.a_w_P.T),formatter={'float_kind': lambda x: f"{x:8.3f}"}, max_line_width= 1000000000))
     print('a_e_P')
@@ -91,7 +91,7 @@ def Coeff_P(geo, var, Faces, Fields, Coupler):
     print(np.array2string(np.flipud(Faces.a_s_P.T),formatter={'float_kind': lambda x: f"{x:8.3f}"}, max_line_width= 1000000000))
     print('a_P_P')
     print(np.array2string(np.flipud(Faces.a_P_P.T),formatter={'float_kind': lambda x: f"{x:8.3f}"}, max_line_width= 1000000000))
-
+    """
             
 
 def TDMA_P(geo, var, Faces, Fields, Coupler, Tri):
@@ -122,7 +122,7 @@ def TDMA_P(geo, var, Faces, Fields, Coupler, Tri):
 
                 else:
                             
-                    Tri.RHS_P[j] += (-Faces.a_w_P[i,j]*Fields.Pp[i-1,j] + -Faces.a_e_P[i,j]*Fields.Pp[i+1,j])
+                    Tri.RHS_P[j] += -Faces.a_w_P[i,j]*Fields.Pp[i-1,j] - Faces.a_e_P[i,j]*Fields.Pp[i+1,j]
 
 
                 if j == 0:
@@ -130,18 +130,18 @@ def TDMA_P(geo, var, Faces, Fields, Coupler, Tri):
                     Tri.lower_P[j] = 0
                     
                     #Residual
-                    Tri.RHS_P[j] += -Faces.a_P_P[i,j]*Fields.Pp[i,j] -Faces.a_n_P[i,j]*Fields.Pp[i,j+1]
+                    Tri.RHS_P[j] += -Faces.a_P_P[i,j]*Fields.Pp[i,j] - Faces.a_n_P[i,j]*Fields.Pp[i,j+1]
 
                 elif j == geo.Ny-1:
 
                     Tri.upper_P[j] = 0
 
                     #Residual
-                    Tri.RHS_P[j] += -Faces.a_P_P[i,j]*Fields.Pp[i,j] -Faces.a_s_P[i,j]*Fields.Pp[i,j-1]
+                    Tri.RHS_P[j] += -Faces.a_P_P[i,j]*Fields.Pp[i,j] - Faces.a_s_P[i,j]*Fields.Pp[i,j-1]
 
                 else:
 
-                    Tri.RHS_P[j] += -Faces.a_P_P[i,j]*Fields.Pp[i,j] -Faces.a_s_P[i,j]*Fields.Pp[i,j-1] -Faces.a_n_P[i,j]*Fields.Pp[i,j+1]
+                    Tri.RHS_P[j] += -Faces.a_P_P[i,j]*Fields.Pp[i,j] - Faces.a_s_P[i,j]*Fields.Pp[i,j-1] -Faces.a_n_P[i,j]*Fields.Pp[i,j+1]
             
 
             ab = np.zeros((3, geo.Ny))
@@ -152,6 +152,7 @@ def TDMA_P(geo, var, Faces, Fields, Coupler, Tri):
             sol = solve_banded((1,1), ab, Tri.RHS_P)
             Fields.Pp[i,:] = sol
 
+            """
             print('-------------------------------------------------------------------------')
             print('column', i)
             print('lower')
@@ -162,12 +163,12 @@ def TDMA_P(geo, var, Faces, Fields, Coupler, Tri):
             print(np.array2string(np.flipud(Tri.lower_P.T),formatter={'float_kind': lambda x: f"{x:8.5f}"}, max_line_width= 1000000000))
             print('RHS')
             print(np.array2string(np.flipud(Tri.RHS_P.T),formatter={'float_kind': lambda x: f"{x:8.5f}"}, max_line_width= 1000000000))
-
-        print('P_TDMA results')
-        print(np.array2string(np.flipud(Fields.Pp.T),formatter={'float_kind': lambda x: f"{x:8.5f}"}, max_line_width= 1000000000))
-                
-                    
-
+            print('P_TDMA results')
+            print(np.array2string(np.flipud(Fields.Pp.T),formatter={'float_kind': lambda x: f"{x:8.5f}"}, max_line_width= 1000000000))
+            """
+        
+        Fields.Pp[:] = 0.0
+        
         #========================================== ROWS ============================
         for j in range (geo.Ny):
             Tri.upper_P[:] = 0
@@ -221,22 +222,22 @@ def TDMA_P(geo, var, Faces, Fields, Coupler, Tri):
             sol = solve_banded((1,1), ab, Tri.RHS_P)
             Fields.Pp[:,j] = sol
 
+            
+          #  print('-------------------------------------------------------------------------')
+           # print('row', j)
+           # print('lower')
+           # print(np.array2string(np.flipud(Tri.upper_P.T),formatter={'float_kind': lambda x: f"{x:8.5f}"}, max_line_width= 1000000000))
+          #  print('diag')
+           # print(np.array2string(np.flipud(Tri.diag_P.T),formatter={'float_kind': lambda x: f"{x:8.5f}"}, max_line_width= 1000000000))
+           # print('upper')
+           # print(np.array2string(np.flipud(Tri.lower_P.T),formatter={'float_kind': lambda x: f"{x:8.5f}"}, max_line_width= 1000000000))
+           # print('RHS')
+            #print(np.array2string(np.flipud(Tri.RHS_P.T),formatter={'float_kind': lambda x: f"{x:8.5f}"}, max_line_width= 1000000000))
+            
 
-            print('-------------------------------------------------------------------------')
-            print('column', i)
-            print('lower')
-            print(np.array2string(np.flipud(Tri.upper_P.T),formatter={'float_kind': lambda x: f"{x:8.5f}"}, max_line_width= 1000000000))
-            print('diag')
-            print(np.array2string(np.flipud(Tri.diag_P.T),formatter={'float_kind': lambda x: f"{x:8.5f}"}, max_line_width= 1000000000))
-            print('upper')
-            print(np.array2string(np.flipud(Tri.lower_P.T),formatter={'float_kind': lambda x: f"{x:8.5f}"}, max_line_width= 1000000000))
-            print('RHS')
-            print(np.array2string(np.flipud(Tri.RHS_P.T),formatter={'float_kind': lambda x: f"{x:8.5f}"}, max_line_width= 1000000000))
 
-    
-        
-    print('P_TDMA results')
-    print(np.array2string(np.flipud(Fields.Pp.T),formatter={'float_kind': lambda x: f"{x:8.5f}"}, max_line_width= 1000000000))
+    #print('P_TDMA results')
+    #print(np.array2string(np.flipud(Fields.Pp.T),formatter={'float_kind': lambda x: f"{x:8.5f}"}, max_line_width= 1000000000))
     
     
         

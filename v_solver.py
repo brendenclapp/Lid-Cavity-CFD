@@ -87,7 +87,7 @@ def Coeff_v(geo, var, Fields, Faces):
             #===================================== PRESSURE ========================================================
 
                 Faces.dPdy[i,j] = (Fields.P[i,j-1] - Fields.P[i,j]) * geo.dy
-                
+    """      
     print('a_w_v')
     print(np.array2string(np.flipud(Faces.a_w_v.T),formatter={'float_kind': lambda x: f"{x:8.3f}"}, max_line_width= 1000000000))
     print('a_e_v')
@@ -98,7 +98,7 @@ def Coeff_v(geo, var, Fields, Faces):
     print(np.array2string(np.flipud(Faces.a_s_v.T),formatter={'float_kind': lambda x: f"{x:8.3f}"}, max_line_width= 1000000000))
     print('a_P_v')
     print(np.array2string(np.flipud(Faces.a_P_v.T),formatter={'float_kind': lambda x: f"{x:8.3f}"}, max_line_width= 1000000000))
-
+    """
         
 
 def TDMA_v(var, geo, Fields, Faces, Tri):
@@ -237,5 +237,5 @@ def TDMA_v(var, geo, Fields, Faces, Tri):
                         Fields.v[i,j] = Fields.v[i,j] + Fields.v_tilde[i,j]
     
       
-        print('v_TDMA results')
-        print(np.array2string(np.flipud(Fields.v.T),formatter={'float_kind': lambda x: f"{x:8.5f}"}, max_line_width= 1000000000))
+        #print('v_TDMA results')
+        #print(np.array2string(np.flipud(Fields.v.T),formatter={'float_kind': lambda x: f"{x:8.5f}"}, max_line_width= 1000000000))

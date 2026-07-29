@@ -32,11 +32,11 @@ def correction(geo, var, Faces, Fields, Coupler, Tri):
 
     fmt = {'float_kind': lambda x: f"{x:12.6f}"}
 
-    print('v final results')
-    print(np.array2string(np.flipud(Fields.v.T),formatter=fmt,max_line_width=100000000000))
+    #print('v final results')
+    #print(np.array2string(np.flipud(Fields.v.T),formatter=fmt,max_line_width=100000000000))
 
-    print('u final results')
-    print(np.array2string(np.flipud(Fields.u.T),formatter=fmt,max_line_width=100000000000))
+   # print('u final results')
+    #print(np.array2string(np.flipud(Fields.u.T),formatter=fmt,max_line_width=100000000000))
 
-    print('P final results')
-    print(np.array2string( np.flipud(Fields.P.T), formatter=fmt, max_line_width=100000000000 ))
+   # print('P final results')
+   # print(np.array2string( np.flipud(Fields.P.T), formatter=fmt, max_line_width=100000000000 ))

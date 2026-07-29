@@ -5,8 +5,8 @@ class Geometry:
 
     def __init__ (self):
 
-        self.Nx = 8
-        self.Ny = 8
+        self.Nx = 80
+        self.Ny = 80
 
         self.lx = 0.01            # meters
         self.ly = 0.01           # meters

@@ -4,6 +4,7 @@ import u_solver
 import v_solver
 import Pressure
 import correction
+import plotting
 
 geo = Data.Geometry()
 var = Data.Variables(geo)
@@ -19,9 +20,10 @@ print(f"Grid: {geo.Nx}x{geo.Ny} | Re: {var.rho * var.u_lid * geo.lx / var.mu:.1f
 #BCs
 Fields.u[0,:] = 0; Fields.u[geo.Nx, :] = 0 
 Fields.v[:,0] = 0; Fields.v[:geo.Ny-1] = 0
-print(np.array2string(np.flipud(Fields.u.T),formatter={'float_kind': lambda x: f"{x:8.5f}"}, max_line_width= 1000000000))
 
-for mit in range (1):
+max_mit = 500
+
+for mit in range (max_mit):
 
     #Step 1 Momentum coeff
     u_solver.Coeff_u(geo,var,Fields,Faces)
@@ -37,3 +39,8 @@ for mit in range (1):
 
     #Step 4 Correction
     correction.correction(geo, var, Faces, Fields, Coupler, Tri)
+
+    print(f"Itteration {mit} of {max_mit} Complete")
+
+#Step 5 Plotting
+plotting.P_plot(geo,Fields)

@@ -99,7 +99,7 @@ def Coeff_u(geo,var,Fields,Faces):
 
                 Faces.dPdx[i,j] = (Fields.P[i-1,j] - Fields.P[i,j]) * geo.dy
 
-
+    """
     print('a_w_u')
     print(np.array2string(np.flipud(Faces.a_w_u.T),formatter={'float_kind': lambda x: f"{x:8.3f}"}, max_line_width= 1000000000))
     print('a_e_u')
@@ -110,7 +110,7 @@ def Coeff_u(geo,var,Fields,Faces):
     print(np.array2string(np.flipud(Faces.a_s_u.T),formatter={'float_kind': lambda x: f"{x:8.3f}"}, max_line_width= 1000000000))
     print('a_P_u')
     print(np.array2string(np.flipud(Faces.a_P_u.T),formatter={'float_kind': lambda x: f"{x:8.3f}"}, max_line_width= 1000000000))
-
+    """
 
     
 def TDMA_u(var, geo, Fields, Faces, Tri):
@@ -251,5 +251,5 @@ def TDMA_u(var, geo, Fields, Faces, Tri):
                     Fields.u[i,j] = Fields.u[i,j] + Fields.u_tilde[i,j]
 
   
-    print('u_TDMA results')
-    print(np.array2string(np.flipud(Fields.u.T),formatter={'float_kind': lambda x: f"{x:8.5f}"}, max_line_width= 1000000000))
+    #print('u_TDMA results')
+    #print(np.array2string(np.flipud(Fields.u.T),formatter={'float_kind': lambda x: f"{x:8.5f}"}, max_line_width= 1000000000))
