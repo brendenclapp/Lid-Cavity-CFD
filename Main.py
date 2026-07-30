@@ -21,7 +21,7 @@ print(f"Grid: {geo.Nx}x{geo.Ny} | Re: {var.rho * var.u_lid * geo.lx / var.mu:.1f
 Fields.u[0,:] = 0; Fields.u[geo.Nx, :] = 0 
 Fields.v[:,0] = 0; Fields.v[:geo.Ny-1] = 0
 
-max_mit = 500
+max_mit = 50
 
 for mit in range (max_mit):
 
@@ -40,7 +40,8 @@ for mit in range (max_mit):
     #Step 4 Correction
     correction.correction(geo, var, Faces, Fields, Coupler, Tri)
 
-    print(f"Itteration {mit} of {max_mit} Complete")
+    print(f"Itteration {mit} of {max_mit} Completed")
 
 #Step 5 Plotting
+print("Simulation Finished")
 plotting.P_plot(geo,Fields)
