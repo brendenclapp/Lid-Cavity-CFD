@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def P_plot(geo, Fields):
+def P_plot(geo, Fields, pitt, t):
 
     import numpy as np
     import matplotlib.pyplot as plt
@@ -37,6 +37,13 @@ def P_plot(geo, Fields):
     plt.colorbar(label='Pressure (Pa)')
     plt.xlabel('x (m)')
     plt.ylabel('y (m)')
-    plt.title('Pressure Contours')
+    plt.title(f'Pressure Contours {t:.3f}')
     plt.axis('equal')
-    plt.show()
+
+    plt.savefig(
+        f"frames/frame_{pitt:05d}.png",
+        dpi=150,
+        bbox_inches="tight"
+    )
+
+    plt.close()

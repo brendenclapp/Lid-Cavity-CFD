@@ -72,17 +72,17 @@ def Coeff_v(geo, var, Fields, Faces):
                 if i == 0:
 
                     Faces.a_P_v[i,j] = (((abs(cn)-cn)/2)*geo.dx + dn) + (((abs(cs)+cs)/2)*geo.dx + ds) \
-                                        + ((((abs(ce)-ce)/2)*geo.dy + de) + (3*var.mu*geo.dx)/geo.dy)
+                                        + ((((abs(ce)-ce)/2)*geo.dy + de) + (3*var.mu*geo.dx)/geo.dy) + var.aPo
             #Right Wall
                 elif i == geo.Nx-1:
 
                     Faces.a_P_v[i,j] = (((abs(cn)-cn)/2)*geo.dx + dn) + (((abs(cs)+cs)/2)*geo.dx + ds) \
-                                        + ((((abs(cw)+cw)/2)*geo.dy + de) + (3*var.mu*geo.dx)/geo.dy)
+                                        + ((((abs(cw)+cw)/2)*geo.dy + de) + (3*var.mu*geo.dx)/geo.dy) + var.aPo
 
             # Central A Interior
                 else:
                     Faces.a_P_v[i,j] = (((abs(ce)-ce)/2)*geo.dy + de) + (((abs(cw)+cw)/2)*geo.dy + dw) \
-                                    + (((abs(cn)-cn)/2)*geo.dx + dn) + ((abs(cs)+cs)/2)*geo.dx + ds
+                                    + (((abs(cn)-cn)/2)*geo.dx + dn) + (((abs(cs)+cs)/2)*geo.dx + ds) + var.aPo
 
             #===================================== PRESSURE ========================================================
 
@@ -98,8 +98,7 @@ def Coeff_v(geo, var, Fields, Faces):
 
     var.res_v = np.sqrt(var.res_v)       
 
-
-def TDMA_v(geo, Fields, Faces, Tri):
+def TDMA_v(geo, var, Fields, Faces, Tri):
      
         #========================================== COLUMNS ============================
         for uitt in range (2):
@@ -117,7 +116,7 @@ def TDMA_v(geo, Fields, Faces, Tri):
                     Tri.upper_colv[k] = Faces.a_n_v[i,j]
                     Tri.diag_colv[k]  = Faces.a_P_v[i,j]*(1.2)
                     Tri.lower_colv[k] = Faces.a_s_v[i,j]
-                    Tri.RHS_colv[k] = Faces.dPdy[i,j]
+                    Tri.RHS_colv[k] = Faces.dPdy[i,j] + var.aPo*Fields.v_old[i,j]
     
     
                     if i == 0:
@@ -187,7 +186,7 @@ def TDMA_v(geo, Fields, Faces, Tri):
                     Tri.upper_rowv[k] = Faces.a_e_v[i,j]
                     Tri.diag_rowv[k]  = Faces.a_P_v[i,j]*(1.2)
                     Tri.lower_rowv[k] = Faces.a_w_v[i,j]
-                    Tri.RHS_rowv[k]   = Faces.dPdy[i,j]
+                    Tri.RHS_rowv[k]   = Faces.dPdy[i,j] + var.aPo*Fields.v_old[i,j]
     
                     if i == 0:
     

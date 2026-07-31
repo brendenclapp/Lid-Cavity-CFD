@@ -77,18 +77,18 @@ def Coeff_u(geo,var,Fields,Faces):
             if j == 0:
 
                 Faces.a_P_u[i,j] = (((abs(ce)-ce)/2)*geo.dy + de) + (((abs(cw)+cw)/2)*geo.dy + dw) \
-                                + (((abs(cn)-cn)/2)*geo.dx + dn + (3*var.mu*geo.dx)/geo.dy)
+                                + (((abs(cn)-cn)/2)*geo.dx + dn + (3*var.mu*geo.dx)/geo.dy) + var.aPo
 
             #Top Wall
             elif j == geo.Ny-1:
 
                 Faces.a_P_u[i,j] = (((abs(ce)-ce)/ 2)*geo.dy + de) + (((abs(cw)+cw)/2)*geo.dy + dw) \
-                                    + (((abs(cs)+cs)/2)*geo.dx + ds + (3*var.mu*geo.dx)/geo.dy)
+                                    + (((abs(cs)+cs)/2)*geo.dx + ds + (3*var.mu*geo.dx)/geo.dy) + var.aPo
 
             # Central A Interior
             else:
                 Faces.a_P_u[i,j] = (((abs(ce)-ce)/2)*geo.dy + de) + (((abs(cw)+cw)/2)*geo.dy + dw) \
-                                + (((abs(cn)-cn)/2)*geo.dx + dn) + ((abs(cs)+cs)/2)*geo.dx + ds
+                                + (((abs(cn)-cn)/2)*geo.dx + dn) + (((abs(cs)+cs)/2)*geo.dx + ds) + var.aPo
 
             #===================================== PRESSURE ========================================================
 
@@ -108,7 +108,7 @@ def Coeff_u(geo,var,Fields,Faces):
                     + (Faces.a_e_u[i,j]*Fields.u[i+1,j]) + (Faces.a_s_u[i,j]*Fields.u[i,j-1]) \
                     + (Faces.a_n_u[i,j]*Fields.u[i,j+1]) - Faces.dPdx[i,j])**2
 
-    var.res_u = np.sqrt(var.res_u)       
+    var.res_u = np.sqrt(var.res_u)    
 
     
 def TDMA_u(var, geo, Fields, Faces, Tri):
@@ -131,7 +131,7 @@ def TDMA_u(var, geo, Fields, Faces, Tri):
                 Tri.upper_col[k] = Faces.a_n_u[i,j]
                 Tri.diag_col[k]  = Faces.a_P_u[i,j]*(1.2)
                 Tri.lower_col[k] = Faces.a_s_u[i,j]
-                Tri.RHS_col[k] = Faces.dPdx[i,j]
+                Tri.RHS_col[k] = Faces.dPdx[i,j] + var.aPo*Fields.u_old[i,j]
 
 
                 if i == 1:
@@ -201,7 +201,7 @@ def TDMA_u(var, geo, Fields, Faces, Tri):
                 Tri.upper_row[k] = Faces.a_e_u[i,j]
                 Tri.diag_row[k]  = Faces.a_P_u[i,j]*(1.2)
                 Tri.lower_row[k] = Faces.a_w_u[i,j]
-                Tri.RHS_row[k]   = Faces.dPdx[i,j]
+                Tri.RHS_row[k]   = Faces.dPdx[i,j] + var.aPo*Fields.u_old[i,j]
 
                 if i == 1:
 

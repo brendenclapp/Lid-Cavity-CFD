@@ -92,7 +92,6 @@ def Coeff_P(geo, var, Faces, Fields):
     var.res_P = np.sqrt(var.res_P)       
 
 
-
 def TDMA_P(geo, Faces, Fields, Tri):
 
     Fields.Pp[:] = 0.0

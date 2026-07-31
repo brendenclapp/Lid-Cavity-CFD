@@ -5,8 +5,8 @@ class Geometry:
 
     def __init__ (self):
 
-        self.Nx = 80             # number of cells in x direction
-        self.Ny = 80             # number of cells in y direction
+        self.Nx = 40             # number of cells in x direction
+        self.Ny = 40             # number of cells in y direction
 
         self.lx = 0.01           # (m) length of computational domain
         self.ly = 0.01           # (m) height of computational domain
@@ -32,11 +32,13 @@ class Variables:
         self.res_v = 1                         # residual of v solution (1 is placeholder)
         self.res_P = 1                         # residual of P solution (1 is placeholder)
 
-        self.utol = 1e-6                       # u solution tolerance
-        self.vtol = 1e-6                       # v solution tolerance
-        self.ptol = 6.5e-5                     # P solution tolerance
+        self.utol = 2e-5                       # u solution tolerance
+        self.vtol = 2e-5                       # v solution tolerance
+        self.ptol = 1e-4                       # P solution tolerance
 
         self.itt = 1                           # Outer loop itteration counter
+
+        self.aPo = 0                           # Transient coefficient
 
 class Fields:        
 
