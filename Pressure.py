@@ -1,9 +1,9 @@
 import numpy as np
 from scipy.linalg import solve_banded
 
-def Coeff_P(geo, var, Faces, Fields, Coupler):
+def Coeff_P(geo, var, Faces, Fields):
 
-    Coupler.b[:] = 0.0
+    Faces.b[:] = 0.0
     Fields.P[0,0] = 0
 
     for i in range(geo.Nx):
@@ -58,30 +58,42 @@ def Coeff_P(geo, var, Faces, Fields, Coupler):
             #======================== MASS IMBALANCE ===================================
             if i == 0:
 
-                Coupler.b[i,j] += (var.rho*Fields.u[i+1,j])*geo.dy
+                Faces.b[i,j] += (var.rho*Fields.u[i+1,j])*geo.dy
 
             elif i == geo.Nx-1:
 
-                Coupler.b[i,j] += -(var.rho*Fields.u[i,j])*geo.dy
+                Faces.b[i,j] += -(var.rho*Fields.u[i,j])*geo.dy
 
             else:
 
-                Coupler.b[i,j] += (((var.rho*Fields.u[i+1,j])-(var.rho*Fields.u[i,j]))*geo.dy)
+                Faces.b[i,j] += (((var.rho*Fields.u[i+1,j])-(var.rho*Fields.u[i,j]))*geo.dy)
 
             if j == 0:
 
-                 Coupler.b[i,j] += var.rho*Fields.v[i,j+1]*geo.dx
+                Faces.b[i,j] += var.rho*Fields.v[i,j+1]*geo.dx
 
             elif j == geo.Ny-1:
 
-                Coupler.b[i,j] += -(var.rho*Fields.v[i,j])*geo.dx
+                Faces.b[i,j] += -(var.rho*Fields.v[i,j])*geo.dx
 
             else:
 
-                Coupler.b[i,j] += ((var.rho*Fields.v[i,j+1])-(var.rho*Fields.v[i,j]))*geo.dx
+                Faces.b[i,j] += ((var.rho*Fields.v[i,j+1])-(var.rho*Fields.v[i,j]))*geo.dx
 
 
-def TDMA_P(geo, var, Faces, Fields, Coupler, Tri):
+    var.res_P = 0.0
+    for i in range (1, geo.Nx-1):
+        for j in range (1, geo.Ny-1):
+
+            var.res_P = var.res_P + ((Faces.a_P_P[i,j]*Fields.P[i,j]) + (Faces.a_w_P[i,j]*Fields.P[i-1,j]) \
+                    + (Faces.a_e_P[i,j]*Fields.P[i+1,j]) + (Faces.a_s_P[i,j]*Fields.P[i,j-1]) \
+                    + (Faces.a_n_P[i,j]*Fields.P[i,j+1]) - Faces.b[i,j])**2
+
+    var.res_P = np.sqrt(var.res_P)       
+
+
+
+def TDMA_P(geo, Faces, Fields, Tri):
 
     Fields.Pp[:] = 0.0
 
@@ -98,7 +110,7 @@ def TDMA_P(geo, var, Faces, Fields, Coupler, Tri):
                 Tri.upper_P[i] = Faces.a_e_P[i,j]
                 Tri.diag_P[i]  = Faces.a_P_P[i,j]
                 Tri.lower_P[i] = Faces.a_w_P[i,j]
-                Tri.RHS_P[i]   = -Coupler.b[i,j]
+                Tri.RHS_P[i]   = -Faces.b[i,j]
 
                 if i == 0:
 
@@ -140,7 +152,7 @@ def TDMA_P(geo, var, Faces, Fields, Coupler, Tri):
             sol = solve_banded((1,1), ab, Tri.RHS_P)
             Fields.Pp[:,j] += sol
             
-    #========================================== COLUMNS ============================
+        #========================================== COLUMNS ============================
         for i in range (geo.Nx):
             Tri.upper_P[:] = 0
             Tri.diag_P[:]  = 0
@@ -151,7 +163,7 @@ def TDMA_P(geo, var, Faces, Fields, Coupler, Tri):
                 Tri.upper_P[j] = Faces.a_n_P[i,j]
                 Tri.diag_P[j]  = Faces.a_P_P[i,j]
                 Tri.lower_P[j] = Faces.a_s_P[i,j]
-                Tri.RHS_P[j]   = -Coupler.b[i,j]
+                Tri.RHS_P[j]   = -Faces.b[i,j]
 
                 if i == 0:
                     

@@ -13,9 +13,9 @@ def Coeff_v(geo, var, Fields, Faces):
                 # Left Wall
                 if i == 0:
 
-                    ce = var.rho*(Fields.u[i,j] + Fields.u[i,j-1])*0.5
-                    de = var.mu * geo.dy / geo.dx
-                    we = (var.mu * geo.dx)/ (3*geo.dy)
+                    ce = var.rho*(Fields.u[i,j] + Fields.u[i,j-1])*0.5              # Convective Flux
+                    de = var.mu * geo.dy / geo.dx                                   # Diffusive Flux
+                    we = (var.mu * geo.dx)/ (3*geo.dy)                              # Wall influence
                     
                     Faces.a_e_v[i,j] = -((abs(ce)-ce)/2)*geo.dx - de - we
 
@@ -87,23 +87,21 @@ def Coeff_v(geo, var, Fields, Faces):
             #===================================== PRESSURE ========================================================
 
                 Faces.dPdy[i,j] = (Fields.P[i,j-1] - Fields.P[i,j]) * geo.dy
-    """      
-    print('a_w_v')
-    print(np.array2string(np.flipud(Faces.a_w_v.T),formatter={'float_kind': lambda x: f"{x:8.3f}"}, max_line_width= 1000000000))
-    print('a_e_v')
-    print(np.array2string(np.flipud(Faces.a_e_v.T),formatter={'float_kind': lambda x: f"{x:8.3f}"}, max_line_width= 1000000000))
-    print('a_n_v')
-    print(np.array2string(np.flipud(Faces.a_n_v.T),formatter={'float_kind': lambda x: f"{x:8.3f}"}, max_line_width= 1000000000))
-    print('a_s_v')
-    print(np.array2string(np.flipud(Faces.a_s_v.T),formatter={'float_kind': lambda x: f"{x:8.3f}"}, max_line_width= 1000000000))
-    print('a_P_v')
-    print(np.array2string(np.flipud(Faces.a_P_v.T),formatter={'float_kind': lambda x: f"{x:8.3f}"}, max_line_width= 1000000000))
-    """
-        
 
-def TDMA_v(var, geo, Fields, Faces, Tri):
+    var.res_v = 0.0
+    for i in range (1, geo.Nx-1):
+        for j in range (1, geo.Ny):
+
+            var.res_v = var.res_v + ((Faces.a_P_v[i,j]*Fields.v[i,j]) + (Faces.a_w_v[i,j]*Fields.v[i-1,j]) \
+                    + (Faces.a_e_v[i,j]*Fields.v[i+1,j]) + (Faces.a_s_v[i,j]*Fields.v[i,j-1]) \
+                    + (Faces.a_n_v[i,j]*Fields.v[i,j+1]) - Faces.dPdy[i,j])**2
+
+    var.res_v = np.sqrt(var.res_v)       
+
+
+def TDMA_v(geo, Fields, Faces, Tri):
      
-#========================================== COLUMNS ============================
+        #========================================== COLUMNS ============================
         for uitt in range (2):
             for i in range(geo.Nx):
     
@@ -175,7 +173,7 @@ def TDMA_v(var, geo, Fields, Faces, Tri):
     
                     Fields.v[i,j] = Fields.v[i,j] + Fields.v_tilde[i,j]
             
-    # ================================================= ROWS =========================================================
+            #================================================= ROWS =========================================================
 
             for j in range(1, geo.Ny):
                 Tri.upper_rowv[:] = 0
@@ -237,5 +235,4 @@ def TDMA_v(var, geo, Fields, Faces, Tri):
                         Fields.v[i,j] = Fields.v[i,j] + Fields.v_tilde[i,j]
     
       
-        #print('v_TDMA results')
-        #print(np.array2string(np.flipud(Fields.v.T),formatter={'float_kind': lambda x: f"{x:8.5f}"}, max_line_width= 1000000000))
+        
