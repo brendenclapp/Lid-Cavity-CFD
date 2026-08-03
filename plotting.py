@@ -30,14 +30,14 @@ def P_plot(geo, Fields, pitt, t):
                 Yv[::step, ::step],
                 u_center[::step, ::step],
                 v_center[::step, ::step],
-                scale=0.1,
+                scale=0.5,
                 color='black')
 
     plt.grid 
     plt.colorbar(label='Pressure (Pa)')
     plt.xlabel('x (m)')
     plt.ylabel('y (m)')
-    plt.title(f'Pressure Contours {t:.3f}')
+    plt.title(f'Pressure Contours at {t:.3f}s')
     plt.axis('equal')
 
     plt.savefig(

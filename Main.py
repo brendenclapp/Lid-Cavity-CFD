@@ -37,7 +37,7 @@ while t < t_final:
     var.res_u = 1 ; var.res_v = 1 ; var.res_P = 1
     var.itt = 1
 
-    while ((var.res_u > var.utol) or (var.res_v > var.vtol) or (var.res_P > var.ptol)) and var.itt < 5:
+    while ((var.res_u > var.utol) or (var.res_v > var.vtol) or (var.res_P > var.ptol)) and var.itt < 5 :
 
         #Step 1 Momentum coeff
         u_solver.Coeff_u(geo,var,Fields,Faces)

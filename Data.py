@@ -5,8 +5,8 @@ class Geometry:
 
     def __init__ (self):
 
-        self.Nx = 40             # number of cells in x direction
-        self.Ny = 40             # number of cells in y direction
+        self.Nx = 80             # number of cells in x direction
+        self.Ny = 80             # number of cells in y direction
 
         self.lx = 0.01           # (m) length of computational domain
         self.ly = 0.01           # (m) height of computational domain
@@ -26,7 +26,7 @@ class Variables:
         self.rho = 1000                        # (kg/m^3) density
         self.mu = 0.001                        # (Pa*s) dynamic viscosity
 
-        self.u_lid = 0.01                      # (m/s) speed of cavity lid                  
+        self.u_lid = 0.1                      # (m/s) speed of cavity lid                  
 
         self.res_u = 1                         # residual of u solution (1 is placeholder)
         self.res_v = 1                         # residual of v solution (1 is placeholder)
