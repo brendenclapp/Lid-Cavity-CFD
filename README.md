@@ -1,1 +1,1 @@
-![Alt text](cavity 40x40, RE=100.gif)
+![Alt text](cavity40x40RE=100.gif)
